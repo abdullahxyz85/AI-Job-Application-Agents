@@ -1,0 +1,28 @@
+# AI Job Application Agent - Complete System Requirements
+# Authentication, Dynamic Data + Coral Protocol Integration
+
+# Core Dependencies
+requests==2.32.3
+asyncio==3.4.3
+openai==1.51.2
+python-dotenv==1.0.0
+sqlite3  # Built-in with Python
+
+# Web API Backend with Authentication
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.12
+pydantic[email]==2.9.2
+
+# Authentication & Security
+bcrypt==4.2.0
+PyJWT==2.10.0
+python-jose[cryptography]==3.3.0
+
+# Coral Protocol & MCP Integration
+camel-ai==0.2.46
+
+# Optional: For advanced features
+PyPDF2==3.0.1
+pandas==2.0.3
+numpy==1.24.3
