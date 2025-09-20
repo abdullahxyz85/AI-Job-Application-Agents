@@ -9,6 +9,10 @@ Integrates with Coral Protocol and AIML API
 import asyncio
 import os
 import json
+
+# Import our real parsers
+from real_resume_parser import RealResumeParser
+from real_job_search_api import RealJobSearchAPI
 import sqlite3
 import uuid
 from datetime import datetime
@@ -139,26 +143,53 @@ def check_aiml_api_config():
 # Resume upload endpoint
 @app.post("/api/resume/upload")
 async def upload_resume(file: UploadFile = File(...)):
-    """Upload and parse resume"""
+    """Upload and parse resume using real PDF parsing"""
     try:
         # Read file content
         content = await file.read()
         
-        # For now, simulate resume parsing (in production, use PDF parser)
+        # REAL RESUME PARSING - No more dummy data!
+        print(f"🚀 Parsing real resume: {file.filename}")
+        resume_parser = RealResumeParser()
+        parsed_result = resume_parser.parse_resume(content)
+        
+        if not parsed_result.get("success"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to parse resume: {parsed_result.get('error', 'Unknown error')}"
+            )
+        
+        # Format real parsed data
+        contact_info = parsed_result.get("contact_info", {})
+        
         resume_data = {
             "id": str(uuid.uuid4()),
             "filename": file.filename,
             "upload_time": datetime.now().isoformat(),
             "parsed_data": {
-                "name": "Uploaded Candidate",
-                "email": "candidate@email.com",
-                "skills": ["React", "TypeScript", "Python", "Node.js", "AWS", "Docker"],
-                "experience_level": "Senior",
-                "years_experience": "5+",
-                "education": "Computer Science",
-                "summary": "Experienced software developer seeking new opportunities"
+                "name": contact_info.get("name", ""),
+                "email": contact_info.get("email", ""),
+                "phone": contact_info.get("phone", ""),
+                "location": contact_info.get("location", ""),
+                "linkedin": contact_info.get("linkedin", ""),
+                "github": contact_info.get("github", ""),
+                "skills": parsed_result.get("skills", []),
+                "experience_level": parsed_result.get("experience_level", ""),
+                "years_experience": parsed_result.get("years_experience", ""),
+                "education": parsed_result.get("education", []),
+                "summary": parsed_result.get("summary", ""),
+                "parsing_confidence": parsed_result.get("parsing_confidence", 0.8)
+            },
+            "parsing_stats": {
+                "text_length": parsed_result.get("text_length", 0),
+                "skills_found": len(parsed_result.get("skills", [])),
+                "confidence": parsed_result.get("parsing_confidence", 0.8)
             }
         }
+        
+        print(f"✅ Successfully parsed resume for: {contact_info.get('name', 'Unknown')}")
+        print(f"   📧 Email: {contact_info.get('email', 'Not found')}")
+        print(f"   🔧 Skills: {len(parsed_result.get('skills', []))} found")
         
         return {
             "success": True,
