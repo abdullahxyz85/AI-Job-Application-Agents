@@ -20,6 +20,10 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 from contextlib import asynccontextmanager
 
+# Import our real parsers
+from real_resume_parser import RealResumeParser
+from real_job_search_api import RealJobSearchAPI
+
 import uvicorn
 from fastapi import FastAPI, HTTPException, BackgroundTasks, UploadFile, File, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -537,22 +541,69 @@ async def parse_resume(
         if not file.filename.endswith('.pdf'):
             raise HTTPException(
                 status_code=400,
-                detail="Only PDF files are supported"
+                detail={
+                    "error": "Invalid file type",
+                    "message": "Only PDF files are supported",
+                    "suggestions": ["Please upload a PDF file", "Convert your resume to PDF format"]
+                }
             )
         
         # Read the uploaded file
         file_content = await file.read()
-        print(f"🔍 Debug: File size: {len(file_content)} bytes")
+        print(f"🔍 Debug: File '{file.filename}' - Size: {len(file_content)} bytes")
         
-        # Simulate resume parsing (replace with actual agent call)
-        # TODO: Integrate with actual resume parser agent
-        skills_found = [
-            "Python", "JavaScript", "React", "FastAPI", "SQL", "Git",
-            "Machine Learning", "Data Analysis", "Project Management",
-            "Communication", "Problem Solving", "Team Leadership"
-        ]
+        # Check file size
+        if len(file_content) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "Empty file",
+                    "message": "The uploaded file is empty",
+                    "suggestions": ["Please select a valid PDF file", "Check that the file uploaded correctly"]
+                }
+            )
         
-        print(f"🔍 Debug: Skills found: {len(skills_found)}")
+        # REAL RESUME PARSING - Replace dummy data with actual parsing
+        print("🚀 Starting real resume parsing...")
+        resume_parser = RealResumeParser()
+        parsed_result = resume_parser.parse_resume(file_content)
+        
+        # Handle parsing errors gracefully
+        if not parsed_result.get("success"):
+            error_msg = parsed_result.get("error", "Unknown parsing error")
+            print(f"❌ Parsing failed: {error_msg}")
+            
+            # Determine appropriate HTTP status code
+            status_code = 422  # Unprocessable Entity for corrupted/invalid PDF
+            if "invalid pdf" in error_msg.lower() or "no /root object" in error_msg.lower():
+                status_code = 400  # Bad Request for clearly invalid files
+            
+            raise HTTPException(
+                status_code=status_code,
+                detail={
+                    "error": "Resume parsing failed",
+                    "message": error_msg,
+                    "filename": file.filename,
+                    "suggestions": [
+                        "Please make sure the file is a valid, non-corrupted PDF",
+                        "Try re-uploading the file",
+                        "If the issue persists, try converting your resume to a new PDF",
+                        "Make sure the PDF is not password protected"
+                    ]
+                }
+            )
+        
+        # Extract real data from parsed resume
+        contact_info = parsed_result.get("contact_info", {})
+        skills_found = parsed_result.get("skills", [])
+        experience_level = parsed_result.get("experience_level", "Not specified")
+        
+        print(f"✅ Real parsing complete:")
+        print(f"   Name: {contact_info.get('name', 'Not found')}")
+        print(f"   Email: {contact_info.get('email', 'Not found')}")
+        print(f"   Skills found: {len(skills_found)}")
+        print(f"   Experience level: {experience_level}")
+        print(f"   Experience: {experience_level}")
         
         # Update user's resume status in database
         conn = get_db_connection()
@@ -612,55 +663,66 @@ async def find_jobs(
         user_skills = [row[0] for row in cursor.fetchall()]
         conn.close()
         
-        # Simulate job search (replace with actual agent call)
-        # TODO: Integrate with actual job search agent
-        sample_jobs = [
-            {
-                "id": "job_001",
-                "title": "Senior Python Developer",
-                "company": "TechCorp Inc.",
-                "location": "San Francisco, CA",
-                "type": "Full-time",
-                "salary": "$120,000 - $150,000",
-                "match_score": 95,
-                "description": "We're looking for a Senior Python Developer to join our AI team...",
-                "requirements": ["Python", "FastAPI", "Machine Learning", "SQL"],
-                "posted_date": "2024-01-15",
-                "applied": False
-            },
-            {
-                "id": "job_002", 
-                "title": "Full Stack Developer",
-                "company": "StartupXYZ",
-                "location": "Remote",
-                "type": "Full-time",
-                "salary": "$90,000 - $120,000",
-                "match_score": 88,
-                "description": "Join our dynamic team as a Full Stack Developer...",
-                "requirements": ["React", "JavaScript", "Python", "Git"],
-                "posted_date": "2024-01-14",
-                "applied": False
-            },
-            {
-                "id": "job_003",
-                "title": "Data Scientist",
-                "company": "DataVision Analytics", 
-                "location": "New York, NY",
-                "type": "Full-time",
-                "salary": "$110,000 - $140,000",
-                "match_score": 82,
-                "description": "We're seeking a Data Scientist to help drive insights...",
-                "requirements": ["Python", "Machine Learning", "Data Analysis", "SQL"],
-                "posted_date": "2024-01-13",
+        # REAL JOB SEARCH - Replace dummy data with actual API calls
+        print("🚀 Starting real job search...")
+        job_search_api = RealJobSearchAPI()
+        
+        # Create search query from user skills
+        if user_skills:
+            # Use top skills for search query
+            primary_skills = user_skills[:3]  # Top 3 skills
+            search_query = " ".join(primary_skills) + " developer"
+        else:
+            search_query = "software developer"  # Default search
+        
+        # Perform real job search
+        job_results = job_search_api.search_jobs_with_fallback(
+            query=search_query,
+            location="United States",
+            max_results=20
+        )
+        
+        if not job_results.get("success"):
+            # If API fails, return helpful error message
+            return {
+                "success": False,
+                "error": job_results.get("error", "Job search failed"),
+                "setup_instructions": job_results.get("setup_instructions"),
+                "next_steps": job_results.get("next_steps"),
+                "jobs": [],
+                "user_skills": user_skills,
+                "search_query": search_query
+            }
+        
+        # Format jobs for frontend
+        formatted_jobs = []
+        for i, job in enumerate(job_results.get("jobs", [])[:10]):  # Limit to 10 jobs
+            formatted_job = {
+                "id": job.get("id", f"job_{i+1}"),
+                "title": job.get("title", ""),
+                "company": job.get("company", ""),
+                "location": job.get("location", ""),
+                "type": job.get("employment_type", "Full-time"),
+                "salary": job.get("salary", "Not specified"),
+                "description": job.get("description", "")[:300] + "...",  # Truncate
+                "apply_link": job.get("apply_link", ""),
+                "posted_date": job.get("posted_date", ""),
+                "source": job.get("source", ""),
+                "match_score": 85,  # Could implement skill matching later
                 "applied": False
             }
-        ]
+            formatted_jobs.append(formatted_job)
+        
+        print(f"✅ Found {len(formatted_jobs)} real jobs using query: {search_query}")
         
         return {
             "success": True,
-            "jobs": sample_jobs,
-            "total_count": len(sample_jobs),
-            "user_skills": user_skills
+            "jobs": formatted_jobs,
+            "total_count": job_results.get("total_results", len(formatted_jobs)),
+            "user_skills": user_skills,
+            "search_query": search_query,
+            "api_used": job_results.get("api_used"),
+            "api_limit_info": job_results.get("api_limit_info")
         }
         
     except Exception as e:
