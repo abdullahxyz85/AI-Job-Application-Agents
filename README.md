@@ -70,9 +70,9 @@ coral-setup/
 │   ├── 📦 package.json
 │   └── ⚙️ vite.config.ts
 │
-├── 📁 coral-server/             # Coral Protocol Integration
-├── 📁 coral-studio/             # Development Tools
-├── 📁 coral-example-app/        # Example Implementation
+├── 📁 coral-server/             # Coral Protocol MCP Server (Kotlin/Gradle)
+├── 📁 coral-studio/             # Agent Session Management UI (SvelteKit)
+├── 📁 coral-example-app/        # Rust Example Application (Discord Bot)
 └── 📖 README.md                 # This file
 ```
 
@@ -81,7 +81,9 @@ coral-setup/
 ### Prerequisites
 
 - **Python 3.13+**
-- **Node.js 18+**
+- **Node.js 18+** & **Yarn**
+- **Java 11+** (for Coral Server)
+- **Rust** (for Coral Example App) - Install from: https://rustup.rs/
 - **Git**
 
 ### 1️⃣ Clone Repository
@@ -124,6 +126,125 @@ npm run dev
 ```
 
 **Frontend will run on:** `http://localhost:5173`
+
+## 🐠 Coral Protocol Components
+
+### 🖥️ **Coral Server** (Agent Communication)
+
+The Coral Server enables AI agents to communicate with each other through a thread-based messaging system.
+
+```bash
+# Navigate to coral-server directory
+cd coral-server
+
+# Run using Gradle (requires Java 11+)
+# Windows:
+gradlew.bat run
+
+# Linux/Mac:
+./gradlew run
+```
+
+**Coral Server will run on:** `http://localhost:5555`
+
+- **MCP Inspector Access**: `http://localhost:5555/devmode/exampleApplication/privkey/session1/sse`
+- **Agent Registration**: Add `?agentId=your_agent_name` to the URL
+
+### 🎨 **Coral Studio** (Session Management UI)
+
+Web interface for creating, managing, and inspecting agent sessions.
+
+```bash
+# Navigate to coral-studio directory
+cd coral-studio
+
+# Install dependencies
+yarn install
+
+# Build and serve
+yarn build
+yarn preview
+```
+
+**Coral Studio will run on:** `http://localhost:4173`
+
+**Alternative - Development Mode:**
+
+```bash
+# For development with hot reload
+yarn dev
+# Development server: http://localhost:5173
+```
+
+**Alternative - Docker:**
+
+```bash
+docker run -p 3000:3000 ghcr.io/coral-protocol/coral-studio
+# Docker version: http://localhost:3000
+```
+
+### 🦀 **Coral Example App** (Rust Discord Bot)
+
+Example Rust application showing Coral Protocol integration with Discord.
+
+```bash
+# Navigate to coral-example-app directory
+cd coral-example-app
+
+# Build the Rust application (requires Rust installed)
+cargo build --release
+
+# Run the Discord bot example
+cargo run --bin app
+
+# Or run the Discord integration
+cargo run --bin discord
+```
+
+**Prerequisites for Rust App:**
+
+- Install Rust: https://rustup.rs/
+- Discord Bot Token (if using Discord integration)
+
+### 🔗 **Complete Coral Protocol Setup**
+
+To run the full Coral Protocol ecosystem:
+
+**Terminal 1 - Coral Server:**
+
+```bash
+cd coral-server
+gradlew.bat run
+```
+
+**Terminal 2 - Coral Studio:**
+
+```bash
+cd coral-studio
+yarn install
+yarn dev
+```
+
+**Terminal 3 - Your AI Job Agent:**
+
+```bash
+cd agents
+python complete_api.py
+```
+
+**Terminal 4 - Frontend:**
+
+```bash
+cd frontend
+npm run dev
+```
+
+Now you'll have:
+
+- **Coral Server**: `http://localhost:5555` (Agent communication)
+- **Coral Studio**: `http://localhost:5173` (Session management)
+- **AI Job Agent**: `http://localhost:8000` (Your main app)
+- **Frontend**: `http://localhost:5173` (User interface)
 
 ### 4️⃣ Access the Application
 
